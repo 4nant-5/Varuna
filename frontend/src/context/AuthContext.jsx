@@ -8,32 +8,54 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('fv_user');
-      if (stored) {
-        setUser(JSON.parse(stored));
+    const validateSession = async () => {
+      try {
+        const token = localStorage.getItem('varuna_token');
+        if (token) {
+          // Validate token with backend
+          const data = await api.validateToken(token);
+          if (data && data.user) {
+            setUser(data.user);
+          } else {
+            // Token invalid — clear
+            localStorage.removeItem('varuna_token');
+            localStorage.removeItem('varuna_user');
+          }
+        }
+      } catch (e) {
+        console.error('Session validation failed', e);
+        localStorage.removeItem('varuna_token');
+        localStorage.removeItem('varuna_user');
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      console.error('Failed to parse stored user', e);
-    } finally {
-      setLoading(false);
-    }
+    };
+    validateSession();
   }, []);
 
   const login = async (email, password) => {
     const data = await api.login(email, password);
+    if (data.token) {
+      localStorage.setItem('varuna_token', data.token);
+      localStorage.setItem('varuna_user', JSON.stringify(data.user));
+    }
     setUser(data.user);
     return data;
   };
 
   const register = async (name, email, organization, password) => {
     const data = await api.register(name, email, organization, password);
+    if (data.token) {
+      localStorage.setItem('varuna_token', data.token);
+      localStorage.setItem('varuna_user', JSON.stringify(data.user));
+    }
     setUser(data.user);
     return data;
   };
 
   const logout = () => {
-    localStorage.removeItem('fv_user');
+    localStorage.removeItem('varuna_token');
+    localStorage.removeItem('varuna_user');
     setUser(null);
   };
 

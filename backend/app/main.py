@@ -1,5 +1,6 @@
 """
-FastAPI Main Application
+Varuna API — Main Application
+Smarter Chartering, Brighter Trades
 """
 
 from fastapi import FastAPI
@@ -7,9 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routes import auth, charters, optimize, commodities
 
 app = FastAPI(
-    title="FreightVoyager API",
-    description="Intelligent Freight Forecasting & Charter Optimization Platform",
-    version="1.0.0",
+    title="Varuna API",
+    description="Varuna — Smarter Chartering, Brighter Trades. Intelligent Freight Forecasting & Charter Optimization Platform.",
+    version="2.0.0",
 )
 
 # CORS
@@ -30,7 +31,7 @@ app.include_router(commodities.router, prefix="/api/commodities", tags=["Commodi
 
 @app.get("/")
 async def root():
-    return {"message": "FreightVoyager API v1.0", "status": "operational"}
+    return {"message": "Varuna API v2.0 — Smarter Chartering, Brighter Trades", "status": "operational"}
 
 
 @app.get("/api/health")

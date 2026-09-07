@@ -1,18 +1,30 @@
 """
-Authentication Routes (Seamless Demo & Multi-tenant Access)
+Varuna API — Authentication Routes (JWT-based)
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 import json
 import os
-import base64
+import secrets
 
 router = APIRouter()
 
 USERS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "users.json")
+
+# JWT configuration
+JWT_SECRET = os.environ.get("JWT_SECRET", secrets.token_hex(32))
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRY_HOURS = 24
+
+try:
+    from jose import jwt as jose_jwt
+    HAS_JOSE = True
+except ImportError:
+    HAS_JOSE = False
+    import base64
 
 DEFAULT_USERS = {
     "officer@sail.gov.in": {
@@ -60,9 +72,50 @@ def _hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-def _generate_token(email: str) -> str:
-    payload = json.dumps({"email": email, "iat": str(datetime.now())})
-    return base64.b64encode(payload.encode()).decode()
+def _generate_token(email: str, name: str) -> str:
+    """Generate a JWT token with email, name, and expiration."""
+    payload = {
+        "sub": email,
+        "name": name,
+        "iat": datetime.utcnow().isoformat(),
+        "exp": (datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS)).isoformat(),
+    }
+    if HAS_JOSE:
+        return jose_jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    else:
+        # Fallback: base64 JSON (less secure but functional)
+        import base64
+        return base64.b64encode(json.dumps(payload).encode()).decode()
+
+
+def _decode_token(token: str) -> dict:
+    """Decode and validate a JWT token. Returns payload or raises."""
+    try:
+        if HAS_JOSE:
+            payload = jose_jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        else:
+            import base64
+            payload = json.loads(base64.b64decode(token).decode())
+        
+        # Check expiration
+        exp_str = payload.get("exp", "")
+        if exp_str:
+            exp_dt = datetime.fromisoformat(exp_str)
+            if datetime.utcnow() > exp_dt:
+                raise HTTPException(status_code=401, detail="Token expired")
+        
+        return payload
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+
+
+def _extract_token(authorization: str) -> str:
+    """Extract Bearer token from Authorization header."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header")
+    return authorization[7:]
 
 
 class RegisterRequest(BaseModel):
@@ -83,17 +136,23 @@ async def register(req: RegisterRequest):
     users = _load_users()
     email_clean = req.email.strip().lower()
     
+    if email_clean in users:
+        raise HTTPException(status_code=400, detail="An account with this email already exists. Please sign in instead.")
+    
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+    
     users[email_clean] = {
         "name": req.name,
         "email": email_clean,
         "password_hash": _hash_password(req.password),
-        "company": req.organization or req.company or "Ministry of Steel Enterprise",
+        "company": req.organization or req.company or "Maritime Enterprise",
         "role": "Procurement Specialist",
         "created_at": datetime.now().isoformat(),
     }
     _save_users(users)
     
-    token = _generate_token(email_clean)
+    token = _generate_token(email_clean, req.name)
     return {
         "token": token,
         "user": {
@@ -110,40 +169,49 @@ async def login(req: LoginRequest):
     users = _load_users()
     email_clean = req.email.strip().lower()
     
-    # If user exists, verify password (or accept demo passwords)
-    if email_clean in users:
-        u = users[email_clean]
-        # In demo environment, allow login
-        token = _generate_token(email_clean)
-        return {
-            "token": token,
-            "user": {
-                "name": u["name"],
-                "email": u["email"],
-                "organization": u.get("company", "Ministry of Steel Enterprise"),
-                "role": u.get("role", "Chartering Officer"),
-            }
-        }
+    if email_clean not in users:
+        raise HTTPException(status_code=401, detail="No account found with this email. Please register first.")
     
-    # Auto-provision new demo user if not in database
-    name = email_clean.split("@")[0].replace(".", " ").title()
-    u = {
-        "name": name or "Chartering Officer",
-        "email": email_clean,
-        "password_hash": _hash_password(req.password),
-        "company": "Steel Authority of India Ltd (SAIL)",
-        "role": "Procurement Specialist",
-    }
-    users[email_clean] = u
-    _save_users(users)
+    u = users[email_clean]
     
-    token = _generate_token(email_clean)
+    # Verify password
+    if u.get("password_hash") != _hash_password(req.password):
+        raise HTTPException(status_code=401, detail="Invalid password. Please try again.")
+    
+    token = _generate_token(email_clean, u["name"])
     return {
         "token": token,
         "user": {
             "name": u["name"],
             "email": u["email"],
-            "organization": u["company"],
-            "role": u["role"],
+            "organization": u.get("company", "Maritime Enterprise"),
+            "role": u.get("role", "Chartering Officer"),
+        }
+    }
+
+
+@router.get("/me")
+async def get_current_user(authorization: str = ""):
+    """Validate token and return current user info."""
+    # Try from header or query
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+    payload = _decode_token(token)
+    
+    email = payload.get("sub", "")
+    users = _load_users()
+    
+    if email not in users:
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    u = users[email]
+    return {
+        "user": {
+            "name": u["name"],
+            "email": u["email"],
+            "organization": u.get("company", "Maritime Enterprise"),
+            "role": u.get("role", "Chartering Officer"),
         }
     }

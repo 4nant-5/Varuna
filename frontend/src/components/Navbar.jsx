@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Anchor, Ship, User, LogOut, BarChart3, BookmarkCheck, History, ShieldCheck } from 'lucide-react';
+import { User, LogOut, BarChart3 } from 'lucide-react';
 
 export default function Navbar() {
   const [isSolid, setIsSolid] = useState(false);
@@ -38,10 +38,12 @@ export default function Navbar() {
     <nav className={`navbar ${isSolid || !isLanding ? 'solid' : 'transparent'}`}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         <Link to="/" className="navbar-brand">
-          <div className="brand-icon">
-            <Ship size={20} color="#0A0A0A" />
-          </div>
-          <span>Freight<span style={{ color: 'var(--accent-primary)' }}>Voyager</span></span>
+          <img
+            src="/varuna-logo.png"
+            alt="Varuna"
+            style={{ height: '32px', width: 'auto', objectFit: 'contain' }}
+          />
+          <span>Varuna</span>
         </Link>
         <span style={{
           fontSize: '10px',
@@ -115,8 +117,8 @@ export default function Navbar() {
             <Link to="/login" className="btn btn-ghost btn-sm">
               Sign In
             </Link>
-            <Link to="/dashboard" className="btn btn-primary btn-sm">
-              Open Console
+            <Link to="/register" className="btn btn-primary btn-sm">
+              Get Started
             </Link>
           </div>
         )}
