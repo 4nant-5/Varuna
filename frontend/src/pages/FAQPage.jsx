@@ -12,7 +12,7 @@ export default function FAQPage() {
     },
     {
       q: 'How does the AI/ML freight rate forecasting model work?',
-      a: 'FreightVoyager utilizes an XGBoost ensemble regression pipeline trained on historical Baltic Dry Indices (BDI, BCI, BPI, BSI), Singapore VLSFO/MGO bunker pricing, macroeconomic commodity benchmarks (Iron Ore 62% Fe, Premium Hard Coking Coal), vessel fleet supply-demand metrics, and seasonal monsoon patterns. It produces forward rate forecasts along with upper and lower statistical confidence bands.',
+      a: 'Varuna utilizes an XGBoost ensemble regression pipeline trained on historical Baltic Dry Indices (BDI, BCI, BPI, BSI), Singapore VLSFO/MGO bunker pricing, macroeconomic commodity benchmarks (Iron Ore 62% Fe, Premium Hard Coking Coal), vessel fleet supply-demand metrics, and seasonal monsoon patterns. It produces forward rate forecasts along with upper and lower statistical confidence bands.',
     },
     {
       q: 'When should a steel mill choose Spot Charter vs. Time Charter vs. COA?',
@@ -38,7 +38,7 @@ export default function FAQPage() {
         <div className="hero-badge">Knowledge Base</div>
         <h1>Frequently Asked Questions</h1>
         <p>
-          Technical and operational guidance on the FreightVoyager charter optimization platform.
+          Technical and operational guidance on the Varuna charter optimization platform.
         </p>
       </div>
 

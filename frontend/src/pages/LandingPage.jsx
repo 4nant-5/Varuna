@@ -19,10 +19,11 @@ import {
 
 export default function LandingPage() {
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [loginEmail, setLoginEmail] = useState('officer@sail.gov.in');
-  const [loginPassword, setLoginPassword] = useState('charter2026');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
-  const { login } = useAuth();
+  const [loginError, setLoginError] = useState('');
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,11 +43,12 @@ export default function LandingPage() {
   const handleQuickLogin = async (e) => {
     e.preventDefault();
     setLoginLoading(true);
+    setLoginError('');
     try {
       await login(loginEmail, loginPassword);
       navigate('/dashboard');
     } catch (err) {
-      console.error(err);
+      setLoginError(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setLoginLoading(false);
     }
@@ -64,21 +66,34 @@ export default function LandingPage() {
           SIH26006 • Ministry of Steel • Government of India
         </div>
 
+        <img
+          src="/varuna-logo.png"
+          alt="Varuna"
+          style={{ height: '100px', width: 'auto', marginBottom: '16px', filter: 'drop-shadow(0 0 20px rgba(14, 165, 233, 0.3))' }}
+        />
+
         <h1 className="hero-title">
-          Intelligent Freight Forecasting &<br />
-          <span style={{ color: 'var(--accent-primary)' }}>Optimized Vessel Chartering</span>
+          Smarter Chartering &<br />
+          <span style={{ color: 'var(--accent-primary)' }}>Brighter Trades</span>
         </h1>
 
         <p className="hero-subtitle">
-          Next-generation maritime intelligence platform engineered for bulk raw material procurement.
+          Varuna — Next-generation maritime intelligence platform engineered for bulk raw material procurement.
           Forecast dry bulk freight rates with XGBoost ML, simulate voyage economics, and discover optimal charter strategies for East Coast India ports.
         </p>
 
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <Link to="/dashboard" className="btn btn-primary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>Launch Charter Console</span>
-            <ArrowRight size={18} />
-          </Link>
+          {isAuthenticated ? (
+            <Link to="/dashboard" className="btn btn-primary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Launch Charter Console</span>
+              <ArrowRight size={18} />
+            </Link>
+          ) : (
+            <Link to="/register" className="btn btn-primary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Get Started</span>
+              <ArrowRight size={18} />
+            </Link>
+          )}
           <a href="#map-section" className="btn btn-secondary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Compass size={18} />
             <span>Explore Trade Corridors</span>
@@ -121,7 +136,7 @@ export default function LandingPage() {
             Precision Fleet Allocation for Dry Bulk Cargos
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: 1.7, marginBottom: '24px' }}>
-            Whether procuring 160,000 MT of Brazilian iron ore or 75,000 MT of Queensland coking coal, our algorithms evaluate Capesize, Kamsarmax, Panamax, and Supramax vessels against draft limits, bunker fuel curves, and tidal windows at Indian discharge berths.
+            Whether procuring 160,000 MT of Brazilian iron ore or 75,000 MT of Queensland coking coal, Varuna's algorithms evaluate Capesize, Kamsarmax, Panamax, and Supramax vessels against draft limits, bunker fuel curves, and tidal windows at Indian discharge berths.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', textAlign: 'left' }}>
             <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '0' }}>
@@ -158,7 +173,7 @@ export default function LandingPage() {
       {/* ─── SECTION 4: PLATFORM CAPABILITIES (75% - 85%) ─────── */}
       <section className="landing-section" style={{ minHeight: '90vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <div className="hero-badge">Core Technological Architecture</div>
+          <div className="hero-badge">Vessels | Voyages | Value</div>
           <h2 style={{ fontSize: '36px', fontWeight: 800, color: '#fff' }}>
             Engineered for Steel PSUs & Bulk Procurers
           </h2>
@@ -211,32 +226,40 @@ export default function LandingPage() {
       <section className="landing-section" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
         <div className="auth-card glass-card" style={{ maxWidth: '480px', width: '100%', padding: '40px', border: '1px solid var(--border-active)' }}>
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <div style={{ width: '54px', height: '54px', margin: '0 auto 16px', background: 'var(--accent-gradient)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Lock size={26} color="#0A0A0A" />
-            </div>
+            <img
+              src="/varuna-logo.png"
+              alt="Varuna"
+              style={{ height: '60px', width: 'auto', margin: '0 auto 16px', display: 'block' }}
+            />
             <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#fff', marginBottom: '6px' }}>
               Access Charter Console
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-              Procurement Officer portal for SIH26006
+              Varuna Maritime Intelligence Portal
             </p>
           </div>
 
+          {loginError && (
+            <div style={{ padding: '10px 14px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid var(--danger)', borderRadius: '0', color: 'var(--danger)', fontSize: '13px', marginBottom: '16px' }}>
+              {loginError}
+            </div>
+          )}
+
           <form onSubmit={handleQuickLogin}>
             <div className="input-group">
-              <label>Official Email</label>
+              <label>Email Address</label>
               <input
                 type="email"
                 className="input-field"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="officer@sail.gov.in"
+                placeholder="you@company.com"
                 required
               />
             </div>
 
             <div className="input-group">
-              <label>Security Key / Password</label>
+              <label>Password</label>
               <input
                 type="password"
                 className="input-field"
@@ -249,23 +272,23 @@ export default function LandingPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-tertiary)' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                <input type="checkbox" defaultChecked /> Remember portal token
+                <input type="checkbox" defaultChecked /> Remember session
               </label>
-              <Link to="/contact" style={{ color: 'var(--accent-primary)' }}>Request Access</Link>
+              <Link to="/contact" style={{ color: 'var(--accent-primary)' }}>Need Help?</Link>
             </div>
 
             <button type="submit" className="btn btn-primary" disabled={loginLoading} style={{ width: '100%', padding: '12px', marginTop: '12px' }}>
-              {loginLoading ? 'Authenticating...' : 'Sign In & Launch Console'}
+              {loginLoading ? 'Authenticating...' : 'Sign In'}
             </button>
           </form>
 
           <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-secondary)', textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
-              Direct access for demonstration:
+            <div style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>
+              Don't have an account?{' '}
+              <Link to="/register" style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
+                Register Now
+              </Link>
             </div>
-            <Link to="/dashboard" className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-              ⚡ Skip Sign In — Open Live Dashboard Demo
-            </Link>
           </div>
         </div>
 

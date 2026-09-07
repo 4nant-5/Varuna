@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/dashboard/Sidebar';
 import CommodityTicker from '../components/dashboard/CommodityTicker';
 import CharterForm from '../components/dashboard/CharterForm';
@@ -13,9 +15,19 @@ export default function Dashboard() {
   const [optimizing, setOptimizing] = useState(false);
   const [optimizationResult, setOptimizationResult] = useState(null);
   const resultsRef = useRef(null);
+  const { isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Auth guard — redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   // Automatically execute an initial default optimization for Coking Coal so the user sees immediate results!
   useEffect(() => {
+    if (!isAuthenticated) return;
     const runInitial = async () => {
       setOptimizing(true);
       try {
@@ -36,7 +48,7 @@ export default function Dashboard() {
       }
     };
     runInitial();
-  }, []);
+  }, [isAuthenticated]);
 
   const handleOptimize = async (formData) => {
     setOptimizing(true);
@@ -61,15 +73,29 @@ export default function Dashboard() {
   };
 
   const handleSavePast = async (fixtureData) => {
-    const existing = JSON.parse(localStorage.getItem('fv_executed_charters') || '[]');
+    const existing = JSON.parse(localStorage.getItem('varuna_executed_charters') || '[]');
     const newEntry = {
       ...fixtureData,
       id: 'EXEC-' + Math.floor(1000 + Math.random() * 9000),
       completedDate: new Date().toISOString().split('T')[0],
       status: 'completed',
     };
-    localStorage.setItem('fv_executed_charters', JSON.stringify([newEntry, ...existing]));
+    localStorage.setItem('varuna_executed_charters', JSON.stringify([newEntry, ...existing]));
   };
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: 'var(--text-secondary)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <img src="/varuna-logo.png" alt="Varuna" style={{ height: '48px', marginBottom: '16px', opacity: 0.7 }} />
+          <div>Loading Varuna Console...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="dashboard-layout">

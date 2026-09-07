@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Ship, Lock, Mail, User, Building, ArrowRight } from 'lucide-react';
+import { Lock, Mail, User, Building, ArrowRight } from 'lucide-react';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -21,7 +21,7 @@ export default function RegisterPage() {
       await register(name, email, organization, password);
       navigate('/dashboard');
     } catch (err) {
-      setError('Registration failed. Please try again.');
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -31,10 +31,12 @@ export default function RegisterPage() {
     <div className="auth-page">
       <div className="auth-card glass-card">
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ width: '48px', height: '48px', background: 'var(--accent-gradient)', borderRadius: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-            <Ship size={24} color="#0A0A0A" />
-          </div>
-          <h1>Officer Registration</h1>
+          <img
+            src="/varuna-logo.png"
+            alt="Varuna"
+            style={{ height: '56px', width: 'auto', margin: '0 auto 12px', display: 'block' }}
+          />
+          <h1>Create Varuna Account</h1>
           <p className="auth-subtitle">Join the Maritime Procurement Intelligence Network</p>
         </div>
 
@@ -58,13 +60,13 @@ export default function RegisterPage() {
           </div>
 
           <div className="input-group">
-            <label>Government / Corporate Email</label>
+            <label>Email Address</label>
             <input
               type="email"
               className="input-field"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="mukherjee@sail.gov.in"
+              placeholder="you@company.com"
               required
             />
           </div>
@@ -83,28 +85,30 @@ export default function RegisterPage() {
               <option value="Tata Steel">Tata Steel</option>
               <option value="Jindal Steel & Power (JSPL)">Jindal Steel & Power (JSPL)</option>
               <option value="Ministry of Steel Desk">Ministry of Steel Desk</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
           <div className="input-group">
-            <label>Create Security Password</label>
+            <label>Create Password (min 6 characters)</label>
             <input
               type="password"
               className="input-field"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              minLength={6}
               required
             />
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: '8px' }}>
-            {loading ? 'Creating Credentials...' : 'Create Account & Access Console'}
+            {loading ? 'Creating Account...' : 'Create Account & Launch Console'}
           </button>
         </form>
 
         <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--text-tertiary)' }}>
-          Already have an officer account?{' '}
+          Already have an account?{' '}
           <Link to="/login" style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
             Sign In Here
           </Link>

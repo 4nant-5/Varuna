@@ -6,8 +6,8 @@ export default function AboutPage() {
   return (
     <div className="public-page" style={{ maxWidth: '1000px', margin: '0 auto', padding: '100px 24px 60px' }}>
       <div className="page-header">
-        <div className="hero-badge">Freight Optimization Engine</div>
-        <h1>About FreightVoyager</h1>
+        <div className="hero-badge">Vessels | Voyages | Value</div>
+        <h1>About Varuna</h1>
         <p>
           Development of an Intelligent Freight Forecasting Model for Optimized Vessel Chartering and Bulk Cargo Procurement from Overseas to East Coast of India.
         </p>
@@ -22,7 +22,7 @@ export default function AboutPage() {
             <h3 style={{ fontSize: '18px', fontWeight: 700 }}>The Ministry of Steel Challenge</h3>
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.7 }}>
-            India’s domestic steel sector requires massive overseas imports of raw materials—primarily metallurgical coking coal from Queensland/New South Wales (Australia) and high-grade iron ore pellets/fines from Brazil and South Africa. Freight rate volatility directly swings raw material landed costs by up to $15–$25 per metric ton.
+            India's domestic steel sector requires massive overseas imports of raw materials—primarily metallurgical coking coal from Queensland/New South Wales (Australia) and high-grade iron ore pellets/fines from Brazil and South Africa. Freight rate volatility directly swings raw material landed costs by up to $15–$25 per metric ton.
           </p>
         </div>
 
@@ -34,7 +34,7 @@ export default function AboutPage() {
             <h3 style={{ fontSize: '18px', fontWeight: 700 }}>AI/ML Driven Solution</h3>
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.7 }}>
-            FreightVoyager delivers a multi-variable machine learning engine (XGBoost regression with ensemble feature selection) capturing Baltic Dry Index fluctuations, Singapore bunker oil futures, geopolitical routing risks, and port congestion factors to accurately predict forward chartering rates.
+            Varuna delivers a multi-variable machine learning engine (XGBoost regression with ensemble feature selection) capturing Baltic Dry Index fluctuations, Singapore bunker oil futures, geopolitical routing risks, and port congestion factors to accurately predict forward chartering rates.
           </p>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default function AboutPage() {
       <div className="glass-card" style={{ padding: '32px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(14,165,233,0.1), rgba(6,182,212,0.05))', border: '1px solid var(--border-active)' }}>
         <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '10px' }}>Ready to optimize your procurement pipeline?</h3>
         <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '20px', maxWidth: '600px', margin: '0 auto 20px' }}>
-          Test the live optimization model, enter your parcel volume, and view real-time voyage economics.
+          Test Varuna's live optimization model, enter your parcel volume, and view real-time voyage economics.
         </p>
         <Link to="/dashboard" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
           <span>Open Charter Console</span>

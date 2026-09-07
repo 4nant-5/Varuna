@@ -1,6 +1,18 @@
 const API_BASE = '/api';
 
-// Fallback initial commodity rates
+/**
+ * Get the stored auth token for API requests
+ */
+function getAuthHeaders() {
+  const token = localStorage.getItem('varuna_token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+// Fallback initial commodity rates (used when backend is unreachable)
 const FALLBACK_COMMODITIES = [
   { id: 'bdi', name: 'Baltic Dry Index (BDI)', symbol: 'BDI', price: 1845, change: 32, changePercent: 1.76, category: 'Freight Index', unit: 'pts' },
   { id: 'bci', name: 'Baltic Capesize Index', symbol: 'BCI', price: 2980, change: 85, changePercent: 2.94, category: 'Freight Index', unit: 'pts' },
@@ -17,58 +29,57 @@ const FALLBACK_COMMODITIES = [
 ];
 
 export const api = {
-  // Auth
+  // ─── Auth ────────────────────────────────────────────────────
   async login(email, password) {
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      if (res.ok) return await res.json();
-    } catch {
-      // fallback
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Login failed');
     }
-    // Mock user auth
-    const user = {
-      id: 'usr-sih-01',
-      name: email.split('@')[0].toUpperCase() || 'Chartering Officer',
-      email: email,
-      role: 'Procurement Specialist',
-      organization: 'Steel Authority of India Ltd (SAIL)',
-      token: 'jwt-token-freightvoyager-simulated',
-    };
-    localStorage.setItem('fv_user', JSON.stringify(user));
-    return { token: user.token, user };
+    return data;
   },
 
   async register(name, email, organization, password) {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, organization, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || 'Registration failed');
+    }
+    return data;
+  },
+
+  async validateToken(token) {
     try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, organization, password }),
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` },
       });
       if (res.ok) return await res.json();
     } catch {
-      // fallback
+      // Backend unreachable — try cached user
+      const cached = localStorage.getItem('varuna_user');
+      if (cached) {
+        try {
+          return { user: JSON.parse(cached) };
+        } catch {}
+      }
     }
-    const user = {
-      id: 'usr-' + Math.random().toString(36).substr(2, 6),
-      name: name,
-      email: email,
-      role: 'Procurement Specialist',
-      organization: organization || 'Ministry of Steel Enterprise',
-      token: 'jwt-token-freightvoyager-simulated',
-    };
-    localStorage.setItem('fv_user', JSON.stringify(user));
-    return { token: user.token, user };
+    return null;
   },
 
-  // Commodities & Indices
+  // ─── Commodities & Indices ───────────────────────────────────
   async getCommodities() {
     try {
-      const res = await fetch(`${API_BASE}/commodities/live`);
+      const res = await fetch(`${API_BASE}/commodities/live`, {
+        headers: getAuthHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         return Array.isArray(data) ? data : (data.prices || FALLBACK_COMMODITIES);
@@ -82,12 +93,14 @@ export const api = {
   // API Key Management
   async getApiKeys() {
     try {
-      const res = await fetch(`${API_BASE}/commodities/keys`);
+      const res = await fetch(`${API_BASE}/commodities/keys`, {
+        headers: getAuthHeaders(),
+      });
       if (res.ok) return await res.json();
     } catch {}
     return {
-      alpha_vantage_key: 'AV-DEMO-LIVE',
-      commodities_api_key: 'COM-STEEL-2026',
+      alpha_vantage_key: '',
+      commodities_api_key: '',
       yahoo_finance_enabled: true,
       active_provider: 'Live Financial & Maritime APIs',
       status: 'Connected & Active',
@@ -98,7 +111,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/commodities/keys`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(keysData),
       });
       if (res.ok) return await res.json();
@@ -106,12 +119,12 @@ export const api = {
     return { message: 'Keys saved locally', status: 'Connected' };
   },
 
-  // Optimization & Recommendations
+  // ─── Optimization & Recommendations ─────────────────────────
   async optimizeCharter(charterInput) {
     try {
       const res = await fetch(`${API_BASE}/optimize/calculate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(charterInput),
       });
       if (res.ok) {
@@ -128,13 +141,15 @@ export const api = {
     return generateMockOptimization(charterInput);
   },
 
-  // Saved Charters
+  // ─── Saved Charters ─────────────────────────────────────────
   async getSavedCharters() {
     try {
-      const res = await fetch(`${API_BASE}/charters/saved`);
+      const res = await fetch(`${API_BASE}/charters/saved`, {
+        headers: getAuthHeaders(),
+      });
       if (res.ok) return await res.json();
     } catch {}
-    const local = localStorage.getItem('fv_saved_charters');
+    const local = localStorage.getItem('varuna_saved_charters');
     if (local) {
       try {
         const parsed = JSON.parse(local);
@@ -148,7 +163,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/charters/saved`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(charterData),
       });
       if (res.ok) return await res.json();
@@ -162,13 +177,15 @@ export const api = {
       status: 'saved',
     };
     const updated = [newEntry, ...existingArray];
-    localStorage.setItem('fv_saved_charters', JSON.stringify(updated));
+    localStorage.setItem('varuna_saved_charters', JSON.stringify(updated));
     return newEntry;
   },
 
   async getPastCharters() {
     try {
-      const res = await fetch(`${API_BASE}/charters/past`);
+      const res = await fetch(`${API_BASE}/charters/past`, {
+        headers: getAuthHeaders(),
+      });
       if (res.ok) return await res.json();
     } catch {}
     return DEFAULT_PAST_CHARTERS;

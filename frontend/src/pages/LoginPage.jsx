@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Ship, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('officer@sail.gov.in');
-  const [password, setPassword] = useState('charter2026');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -19,7 +19,7 @@ export default function LoginPage() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      setError('Invalid credentials or authentication timeout.');
+      setError(err.message || 'Invalid credentials or authentication timeout.');
     } finally {
       setLoading(false);
     }
@@ -29,11 +29,13 @@ export default function LoginPage() {
     <div className="auth-page">
       <div className="auth-card glass-card">
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ width: '48px', height: '48px', background: 'var(--accent-gradient)', borderRadius: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-            <Ship size={24} color="#0A0A0A" />
-          </div>
-          <h1>Officer Sign In</h1>
-          <p className="auth-subtitle">Ministry of Steel • Bulk Freight Forecasting Portal</p>
+          <img
+            src="/varuna-logo.png"
+            alt="Varuna"
+            style={{ height: '56px', width: 'auto', margin: '0 auto 12px', display: 'block' }}
+          />
+          <h1>Sign In to Varuna</h1>
+          <p className="auth-subtitle">Smarter Chartering, Brighter Trades</p>
         </div>
 
         {error && (
@@ -44,7 +46,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="input-group">
-            <label>Government / Corporate Email</label>
+            <label>Email Address</label>
             <div style={{ position: 'relative' }}>
               <input
                 type="email"
@@ -52,6 +54,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                placeholder="you@company.com"
                 style={{ paddingLeft: '38px' }}
               />
               <Mail size={16} color="var(--text-tertiary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -59,7 +62,7 @@ export default function LoginPage() {
           </div>
 
           <div className="input-group">
-            <label>Security Key</label>
+            <label>Password</label>
             <div style={{ position: 'relative' }}>
               <input
                 type="password"
@@ -67,6 +70,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                placeholder="••••••••"
                 style={{ paddingLeft: '38px' }}
               />
               <Lock size={16} color="var(--text-tertiary)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -77,7 +81,7 @@ export default function LoginPage() {
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
               <input type="checkbox" defaultChecked /> Remember session
             </label>
-            <Link to="/contact" style={{ color: 'var(--accent-primary)' }}>Forgot Key?</Link>
+            <Link to="/contact" style={{ color: 'var(--accent-primary)' }}>Need Help?</Link>
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: '8px' }}>
@@ -86,15 +90,9 @@ export default function LoginPage() {
         </form>
 
         <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--text-tertiary)' }}>
-          Don't have an officer account?{' '}
+          Don't have an account?{' '}
           <Link to="/register" style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>
-            Register New Organization
-          </Link>
-        </div>
-
-        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-secondary)', textAlign: 'center' }}>
-          <Link to="/dashboard" className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-            ⚡ Instant Evaluation Demo — Enter Without Login
+            Register Now
           </Link>
         </div>
       </div>

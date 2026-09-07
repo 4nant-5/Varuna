@@ -109,7 +109,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       {/* Model Spec Badge */}
       <div style={{ margin: '24px 16px 0', padding: '12px', background: 'rgba(255, 61, 0, 0.05)', borderRadius: '0', border: '1px solid var(--border-primary)', fontSize: '11px', color: 'var(--text-secondary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-primary)', fontWeight: 700, marginBottom: '4px' }}>
-          <Anchor size={14} /> SIH26006 Engine
+          <Anchor size={14} /> Varuna Engine
         </div>
         <div>Model: XGBoost v2.4 + Voyage Econ</div>
         <div style={{ marginTop: '4px', color: 'var(--text-tertiary)' }}>Last Trained: Sep 2026</div>
