@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGradV" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="60%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="seaGradV" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="50%" stop-color="#0369a1"/>
+      <stop offset="100%" stop-color="#0c4a6e"/>
+    </linearGradient>
+    <linearGradient id="hullGradV" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#312e81"/>
+      <stop offset="45%" stop-color="#1e1b4b"/>
+      <stop offset="46%" stop-color="#b91c1c"/>
+      <stop offset="100%" stop-color="#450a0a"/>
+    </linearGradient>
+    <filter id="shipShadowV" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="240" fill="url(#skyGradV)"/>
+  <ellipse cx="400" cy="235" rx="360" ry="22" fill="#818cf8" opacity="0.15"/>
+  <rect y="235" width="800" height="125" fill="url(#seaGradV)"/>
+  <path d="M 0,238 Q 200,234 400,239 T 800,237" stroke="#a5b4fc" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M 730,244 Q 760,248 785,260 Q 755,256 715,250" fill="#e0e7ff" opacity="0.85"/>
+
+  <g filter="url(#shipShadowV)">
+    <!-- Giant VLOC Hull (400,000 DWT, 362m LOA) -->
+    <path d="M 60,212 L 120,212 L 700,212 Q 745,214 760,233 L 770,256 Q 745,262 710,262 L 100,262 Q 70,260 55,245 Q 50,230 60,212 Z" fill="url(#hullGradV)"/>
+    <line x1="65" y1="235" x2="755" y2="235" stroke="#ffffff" stroke-width="2" opacity="0.8"/>
+
+    <!-- 7 Huge Oval/Octagonal Hatches (VLOC / Valemax) -->
+    <g fill="#4338ca" stroke="#1e1b4b" stroke-width="1.2">
+      <rect x="200" y="202" width="60" height="10" rx="3"/>
+      <rect x="275" y="202" width="60" height="10" rx="3"/>
+      <rect x="350" y="202" width="60" height="10" rx="3"/>
+      <rect x="425" y="202" width="60" height="10" rx="3"/>
+      <rect x="500" y="202" width="60" height="10" rx="3"/>
+      <rect x="575" y="202" width="60" height="10" rx="3"/>
+      <rect x="650" y="202" width="55" height="10" rx="3"/>
+    </g>
+
+    <!-- Superstructure & Twin Funnels -->
+    <rect x="90" y="192" width="90" height="20" rx="1.5" fill="#f8fafc" stroke="#94a3b8" stroke-width="0.8"/>
+    <rect x="95" y="172" width="80" height="20" rx="1.5" fill="#ffffff" stroke="#94a3b8" stroke-width="0.8"/>
+    <polygon points="98,172 98,154 170,154 176,172" fill="#ffffff" stroke="#94a3b8" stroke-width="0.8"/>
+    <rect x="104" y="160" width="68" height="5" fill="#0f172a"/>
+
+    <!-- Twin Funnels (characteristic of giant VLOC) -->
+    <polygon points="110,154 112,130 124,130 126,154" fill="#4f46e5" stroke="#3730a3" stroke-width="1"/>
+    <polygon points="140,154 142,130 154,130 156,154" fill="#4f46e5" stroke="#3730a3" stroke-width="1"/>
+    <rect x="111" y="128" width="14" height="2.5" fill="#0f172a"/>
+    <rect x="141" y="128" width="14" height="2.5" fill="#0f172a"/>
+
+    <!-- Radar mast -->
+    <line x1="133" y1="154" x2="133" y2="120" stroke="#334155" stroke-width="2"/>
+    <ellipse cx="133" cy="120" rx="8" ry="3" fill="#818cf8"/>
+
+    <text x="660" y="228" fill="#f8fafc" font-family="monospace" font-size="7" font-weight="bold">VALEMAX TITAN</text>
+  </g>
+
+  <!-- Ribbon -->
+  <g transform="translate(20, 20)">
+    <rect width="220" height="54" rx="8" fill="#0f172a" fill-opacity="0.85" stroke="#818cf8" stroke-width="1"/>
+    <text x="14" y="22" fill="#818cf8" font-family="sans-serif" font-size="12" font-weight="800">VERY LARGE ORE CARRIER (VLOC)</text>
+    <text x="14" y="38" fill="#e2e8f0" font-family="monospace" font-size="11">400,000 DWT • Chinamax / Valemax</text>
+    <text x="14" y="48" fill="#94a3b8" font-family="sans-serif" font-size="9">Deepwater Only • Max Draft 23.0m • LOA 362m</text>
+  </g>
+</svg>

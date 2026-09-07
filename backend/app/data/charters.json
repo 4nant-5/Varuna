@@ -1,0 +1,16 @@
+[
+  {
+    "id": "CH-67200C",
+    "status": "saved",
+    "created_at": "2026-09-06T23:17:25.243164",
+    "cargoType": "Coking Coal",
+    "quantity": 75000,
+    "loadPort": "Port Hedland, Australia",
+    "dischargePort": "Paradip, India",
+    "vesselClass": "Capesize",
+    "ratePerTonne": 23.52,
+    "totalCost": 1764000,
+    "strategy": "Spot Voyage Charter \u2014 Panamax Vessel (2026-09-13)",
+    "savings": 144648
+  }
+]

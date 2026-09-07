@@ -1,0 +1,280 @@
+{
+  "loading_ports": {
+    "Port Hedland": {
+      "country": "Australia",
+      "lat": -20.31,
+      "lon": 118.57,
+      "commodities": [
+        "Iron Ore"
+      ],
+      "max_draft": 18.5
+    },
+    "Dampier": {
+      "country": "Australia",
+      "lat": -20.66,
+      "lon": 116.71,
+      "commodities": [
+        "Iron Ore"
+      ],
+      "max_draft": 17.0
+    },
+    "Newcastle": {
+      "country": "Australia",
+      "lat": -32.93,
+      "lon": 151.78,
+      "commodities": [
+        "Thermal Coal",
+        "Coking Coal"
+      ],
+      "max_draft": 16.5
+    },
+    "Hay Point": {
+      "country": "Australia",
+      "lat": -21.28,
+      "lon": 149.3,
+      "commodities": [
+        "Coking Coal"
+      ],
+      "max_draft": 18.0
+    },
+    "Richards Bay": {
+      "country": "South Africa",
+      "lat": -28.8,
+      "lon": 32.08,
+      "commodities": [
+        "Thermal Coal",
+        "Chrome Ore"
+      ],
+      "max_draft": 17.5
+    },
+    "Saldanha Bay": {
+      "country": "South Africa",
+      "lat": -33.0,
+      "lon": 17.93,
+      "commodities": [
+        "Iron Ore",
+        "Manganese Ore"
+      ],
+      "max_draft": 21.0
+    },
+    "Muara Berau": {
+      "country": "Indonesia",
+      "lat": -1.8,
+      "lon": 116.08,
+      "commodities": [
+        "Thermal Coal"
+      ],
+      "max_draft": 14.0
+    },
+    "Samarinda": {
+      "country": "Indonesia",
+      "lat": -0.5,
+      "lon": 117.15,
+      "commodities": [
+        "Thermal Coal"
+      ],
+      "max_draft": 12.5
+    },
+    "Hampton Roads": {
+      "country": "USA",
+      "lat": 36.97,
+      "lon": -76.33,
+      "commodities": [
+        "Coking Coal",
+        "Thermal Coal"
+      ],
+      "max_draft": 16.0
+    },
+    "Beira": {
+      "country": "Mozambique",
+      "lat": -19.84,
+      "lon": 34.87,
+      "commodities": [
+        "Coking Coal"
+      ],
+      "max_draft": 11.0
+    },
+    "Nacala": {
+      "country": "Mozambique",
+      "lat": -14.54,
+      "lon": 40.67,
+      "commodities": [
+        "Coking Coal",
+        "Thermal Coal"
+      ],
+      "max_draft": 15.0
+    },
+    "Tubarao": {
+      "country": "Brazil",
+      "lat": -20.28,
+      "lon": -40.25,
+      "commodities": [
+        "Iron Ore"
+      ],
+      "max_draft": 19.5
+    },
+    "Vostochny": {
+      "country": "Russia",
+      "lat": 42.75,
+      "lon": 133.08,
+      "commodities": [
+        "Thermal Coal",
+        "Coking Coal"
+      ],
+      "max_draft": 16.0
+    }
+  },
+  "discharge_ports": {
+    "Paradip": {
+      "state": "Odisha",
+      "lat": 20.26,
+      "lon": 86.61,
+      "max_draft": 18.5,
+      "handling_rate_mt_day": 35000
+    },
+    "Visakhapatnam": {
+      "state": "Andhra Pradesh",
+      "lat": 17.69,
+      "lon": 83.29,
+      "max_draft": 17.1,
+      "handling_rate_mt_day": 30000
+    },
+    "Haldia": {
+      "state": "West Bengal",
+      "lat": 22.06,
+      "lon": 88.06,
+      "max_draft": 9.5,
+      "handling_rate_mt_day": 15000
+    },
+    "Dhamra": {
+      "state": "Odisha",
+      "lat": 20.78,
+      "lon": 86.95,
+      "max_draft": 18.0,
+      "handling_rate_mt_day": 40000
+    },
+    "Gangavaram": {
+      "state": "Andhra Pradesh",
+      "lat": 17.62,
+      "lon": 83.24,
+      "max_draft": 21.0,
+      "handling_rate_mt_day": 45000
+    },
+    "Ennore": {
+      "state": "Tamil Nadu",
+      "lat": 13.22,
+      "lon": 80.32,
+      "max_draft": 16.0,
+      "handling_rate_mt_day": 25000
+    },
+    "Krishnapatnam": {
+      "state": "Andhra Pradesh",
+      "lat": 14.25,
+      "lon": 80.12,
+      "max_draft": 18.5,
+      "handling_rate_mt_day": 35000
+    }
+  },
+  "vessel_classes": {
+    "Handysize": {
+      "dwt_min": 15000,
+      "dwt_max": 35000,
+      "speed_knots": 13.5,
+      "consumption_mt_day": 22,
+      "daily_opex": 6500,
+      "beam": 28
+    },
+    "Supramax": {
+      "dwt_min": 50000,
+      "dwt_max": 65000,
+      "speed_knots": 14.0,
+      "consumption_mt_day": 28,
+      "daily_opex": 7200,
+      "beam": 32
+    },
+    "Panamax": {
+      "dwt_min": 65000,
+      "dwt_max": 85000,
+      "speed_knots": 14.0,
+      "consumption_mt_day": 32,
+      "daily_opex": 7800,
+      "beam": 32.3
+    },
+    "Capesize": {
+      "dwt_min": 150000,
+      "dwt_max": 210000,
+      "speed_knots": 14.5,
+      "consumption_mt_day": 45,
+      "daily_opex": 9500,
+      "beam": 45
+    }
+  },
+  "cargo_types": {
+    "Iron Ore": {
+      "stowage_factor": 0.35,
+      "density": 2.5,
+      "unit": "MT"
+    },
+    "Coking Coal": {
+      "stowage_factor": 0.75,
+      "density": 1.3,
+      "unit": "MT"
+    },
+    "Thermal Coal": {
+      "stowage_factor": 0.8,
+      "density": 1.2,
+      "unit": "MT"
+    },
+    "Manganese Ore": {
+      "stowage_factor": 0.35,
+      "density": 2.8,
+      "unit": "MT"
+    },
+    "Chrome Ore": {
+      "stowage_factor": 0.3,
+      "density": 3.0,
+      "unit": "MT"
+    },
+    "Limestone": {
+      "stowage_factor": 0.5,
+      "density": 2.3,
+      "unit": "MT"
+    }
+  },
+  "route_distances": {
+    "Port Hedland|Paradip": 4250,
+    "Port Hedland|Visakhapatnam": 4520,
+    "Port Hedland|Dhamra": 4300,
+    "Port Hedland|Gangavaram": 4550,
+    "Dampier|Paradip": 4180,
+    "Dampier|Visakhapatnam": 4450,
+    "Newcastle|Paradip": 5800,
+    "Newcastle|Visakhapatnam": 5650,
+    "Newcastle|Haldia": 5900,
+    "Hay Point|Paradip": 5400,
+    "Hay Point|Visakhapatnam": 5250,
+    "Richards Bay|Paradip": 4800,
+    "Richards Bay|Visakhapatnam": 4600,
+    "Richards Bay|Haldia": 5100,
+    "Richards Bay|Gangavaram": 4650,
+    "Saldanha Bay|Paradip": 5600,
+    "Saldanha Bay|Visakhapatnam": 5400,
+    "Muara Berau|Paradip": 3200,
+    "Muara Berau|Visakhapatnam": 3000,
+    "Muara Berau|Haldia": 3350,
+    "Samarinda|Paradip": 3100,
+    "Samarinda|Haldia": 3250,
+    "Hampton Roads|Paradip": 9800,
+    "Hampton Roads|Visakhapatnam": 9600,
+    "Hampton Roads|Haldia": 10000,
+    "Beira|Paradip": 4200,
+    "Beira|Visakhapatnam": 4000,
+    "Nacala|Paradip": 3900,
+    "Nacala|Visakhapatnam": 3700,
+    "Tubarao|Paradip": 9200,
+    "Tubarao|Visakhapatnam": 9000,
+    "Vostochny|Paradip": 4600,
+    "Vostochny|Visakhapatnam": 4800,
+    "Vostochny|Haldia": 4700
+  }
+}

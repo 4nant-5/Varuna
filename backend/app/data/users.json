@@ -1,0 +1,23 @@
+{
+  "officer@sail.gov.in": {
+    "name": "Rajesh Sharma",
+    "email": "officer@sail.gov.in",
+    "password_hash": "3f8d5df6fed01645ea3c338a11a2f591a61bc24b3d2a95be6e2de62cf57ce784",
+    "company": "Steel Authority of India Ltd (SAIL)",
+    "role": "Chief Procurement & Chartering Officer"
+  },
+  "admin@ministryofsteel.gov.in": {
+    "name": "Dr. V. Ramanathan",
+    "email": "admin@ministryofsteel.gov.in",
+    "password_hash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+    "company": "Ministry of Steel, Govt of India",
+    "role": "Joint Secretary (Raw Materials & Logistics)"
+  },
+  "charterer@vizagsteel.com": {
+    "name": "K. Srinivas",
+    "email": "charterer@vizagsteel.com",
+    "password_hash": "cde9584379fe997c7ba4b9501ee608ea92fddf7931c62045c37cc092a58834ec",
+    "company": "Rashtriya Ispat Nigam Ltd (RINL)",
+    "role": "Maritime Chartering Specialist"
+  }
+}
