@@ -24,7 +24,7 @@ export default function SavedChartersView({ onSelectCharter }) {
   const handleDelete = (id) => {
     const updated = charters.filter((c) => c.id !== id);
     setCharters(updated);
-    localStorage.setItem('fv_saved_charters', JSON.stringify(updated));
+    localStorage.setItem('varuna_saved_charters', JSON.stringify(updated));
   };
 
   const getVesselImg = (vc) => {

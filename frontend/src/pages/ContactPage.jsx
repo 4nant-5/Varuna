@@ -20,7 +20,7 @@ export default function ContactPage() {
     <div className="public-page" style={{ maxWidth: '960px', margin: '0 auto', padding: '100px 24px 60px' }}>
       <div className="page-header">
         <div className="hero-badge">Get In Touch</div>
-        <h1>Contact the SIH26006 Team</h1>
+        <h1>Contact the Varuna Team</h1>
         <p>
           Collaborate with the intelligent charter forecasting engineering team or request API integration for your procurement division.
         </p>

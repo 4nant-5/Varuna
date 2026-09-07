@@ -1,7 +1,8 @@
 """
 XGBoost Freight Rate Forecasting Model
 Trains on simulated historical data and predicts freight rates
-with confidence intervals.
+with confidence intervals. Refined with TimeSeriesSplit, 
+Target Encoding, and Early Stopping.
 """
 
 import os
@@ -9,10 +10,32 @@ import json
 import pickle
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import xgboost as xgb
+
+
+class TargetEncoder:
+    """Simple Target Encoder for categorical features."""
+    def __init__(self, smoothing=10):
+        self.smoothing = smoothing
+        self.mapping = {}
+        self.global_mean = 0
+
+    def fit(self, X, y, cols):
+        self.cols = cols
+        self.global_mean = y.mean()
+        for col in self.cols:
+            stats = y.groupby(X[col]).agg(['count', 'mean'])
+            smooth = (stats['count'] * stats['mean'] + self.smoothing * self.global_mean) / (stats['count'] + self.smoothing)
+            self.mapping[col] = smooth.to_dict()
+        return self
+
+    def transform(self, X):
+        X_out = X.copy()
+        for col in self.cols:
+            X_out[col + "_encoded"] = X[col].map(self.mapping[col]).fillna(self.global_mean)
+        return X_out
 
 
 class FreightForecastModel:
@@ -20,31 +43,20 @@ class FreightForecastModel:
     
     def __init__(self):
         self.model = None
-        self.encoders = {}
+        self.target_encoder = TargetEncoder(smoothing=15)
         self.feature_columns = []
         self.metrics = {}
         self.is_trained = False
+        self.categorical_cols = ["loading_port", "discharge_port", "cargo_type", "vessel_class"]
     
-    def _prepare_features(self, df: pd.DataFrame, fit_encoders: bool = False) -> pd.DataFrame:
+    def _prepare_features(self, df: pd.DataFrame, y=None, fit_encoders: bool = False) -> pd.DataFrame:
         """Prepare features for training/prediction."""
         df = df.copy()
         
-        categorical_cols = ["loading_port", "discharge_port", "cargo_type", "vessel_class"]
-        
-        for col in categorical_cols:
-            if fit_encoders:
-                le = LabelEncoder()
-                df[col + "_encoded"] = le.fit_transform(df[col])
-                self.encoders[col] = le
-            else:
-                if col in self.encoders:
-                    # Handle unseen labels
-                    le = self.encoders[col]
-                    df[col + "_encoded"] = df[col].map(
-                        lambda x, le=le: le.transform([x])[0] if x in le.classes_ else -1
-                    )
-                else:
-                    df[col + "_encoded"] = 0
+        if fit_encoders and y is not None:
+            self.target_encoder.fit(df, y, self.categorical_cols)
+            
+        df = self.target_encoder.transform(df)
         
         # Cyclical encoding for month/day_of_year
         df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
@@ -72,47 +84,57 @@ class FreightForecastModel:
         return df[self.feature_columns]
     
     def train(self, df: pd.DataFrame) -> dict:
-        """Train the XGBoost model on historical freight data."""
+        """Train the XGBoost model on historical freight data with TimeSeriesSplit and Early Stopping."""
         print("Preparing features...")
-        X = self._prepare_features(df, fit_encoders=True)
+        
+        # Sort by date for time series validation
+        if "date" in df.columns:
+            df = df.sort_values("date").reset_index(drop=True)
+            
         y = df["freight_rate"]
+        X = self._prepare_features(df, y=y, fit_encoders=True)
         
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
+        # Time-based split instead of random
+        tscv = TimeSeriesSplit(n_splits=5)
         
-        print(f"Training on {len(X_train)} samples, testing on {len(X_test)} samples...")
+        maes, rmses, mapes = [], [], []
         
-        self.model = xgb.XGBRegressor(
-            n_estimators=300,
-            max_depth=8,
-            learning_rate=0.05,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            min_child_weight=5,
-            reg_alpha=0.1,
-            reg_lambda=1.0,
-            random_state=42,
-            n_jobs=-1,
-        )
-        
-        self.model.fit(
-            X_train, y_train,
-            eval_set=[(X_test, y_test)],
-            verbose=50,
-        )
-        
-        # Evaluate
-        y_pred = self.model.predict(X_test)
-        
-        mae = mean_absolute_error(y_test, y_pred)
-        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-        mape = np.mean(np.abs((y_test - y_pred) / y_test)) * 100
+        # Using the last split for final training/validation to save the model
+        for train_index, test_index in tscv.split(X):
+            X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+            y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+            
+            model = xgb.XGBRegressor(
+                n_estimators=500,
+                max_depth=8,
+                learning_rate=0.03,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                min_child_weight=5,
+                reg_alpha=0.1,
+                reg_lambda=1.0,
+                random_state=42,
+                n_jobs=-1,
+                early_stopping_rounds=30
+            )
+            
+            model.fit(
+                X_train, y_train,
+                eval_set=[(X_test, y_test)],
+                verbose=False
+            )
+            
+            y_pred = model.predict(X_test)
+            maes.append(mean_absolute_error(y_test, y_pred))
+            rmses.append(np.sqrt(mean_squared_error(y_test, y_pred)))
+            mapes.append(np.mean(np.abs((y_test - y_pred) / y_test)) * 100)
+            
+        self.model = model  # Keep the last fold's model
         
         self.metrics = {
-            "mae": round(mae, 4),
-            "rmse": round(rmse, 4),
-            "mape": round(mape, 2),
+            "mae": round(np.mean(maes), 4),
+            "rmse": round(np.mean(rmses), 4),
+            "mape": round(np.mean(mapes), 2),
             "train_size": len(X_train),
             "test_size": len(X_test),
             "n_features": len(self.feature_columns),
@@ -126,7 +148,7 @@ class FreightForecastModel:
         }
         
         self.is_trained = True
-        print(f"Model trained! MAE: ${mae:.2f}/MT, RMSE: ${rmse:.2f}/MT, MAPE: {mape:.1f}%")
+        print(f"Model trained! CV MAE: ${self.metrics['mae']:.2f}/MT, RMSE: ${self.metrics['rmse']:.2f}/MT, MAPE: {self.metrics['mape']:.1f}%")
         
         return self.metrics
     
@@ -162,10 +184,18 @@ class FreightForecastModel:
         # Predict
         prediction = float(self.model.predict(X)[0])
         
-        # Estimate confidence interval using training residuals
+        # Dynamic Confidence Intervals: wider for longer laycans/voyages or high congestion
         residual_std = self.metrics.get("rmse", 1.0)
-        ci_lower = prediction - 1.96 * residual_std
-        ci_upper = prediction + 1.96 * residual_std
+        congestion_penalty = (input_data.get("port_congestion", 40) / 100) * 0.5
+        volatility_factor = 1.0 + congestion_penalty
+        
+        if "distance_nm" in input_data and input_data["distance_nm"] > 6000:
+            volatility_factor += 0.2
+            
+        adjusted_std = residual_std * volatility_factor
+        
+        ci_lower = prediction - 1.96 * adjusted_std
+        ci_upper = prediction + 1.96 * adjusted_std
         
         # Get SHAP-like contribution (simplified using feature importance)
         contributions = {}
@@ -179,7 +209,7 @@ class FreightForecastModel:
                 "lower": round(max(ci_lower, 0), 2),
                 "upper": round(ci_upper, 2),
             },
-            "confidence_pct": 87,  # Estimated from MAPE
+            "confidence_pct": round(max(50, 100 - (self.metrics.get("mape", 5) * volatility_factor)), 1),
             "unit": "$/MT",
             "contributing_factors": contributions,
         }
@@ -218,7 +248,7 @@ class FreightForecastModel:
         """Save trained model to disk."""
         data = {
             "model": self.model,
-            "encoders": self.encoders,
+            "target_encoder": self.target_encoder,
             "feature_columns": self.feature_columns,
             "metrics": self.metrics,
         }
@@ -231,7 +261,7 @@ class FreightForecastModel:
         with open(filepath, "rb") as f:
             data = pickle.load(f)
         self.model = data["model"]
-        self.encoders = data["encoders"]
+        self.target_encoder = data["target_encoder"]
         self.feature_columns = data["feature_columns"]
         self.metrics = data["metrics"]
         self.is_trained = True

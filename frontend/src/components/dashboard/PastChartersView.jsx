@@ -10,7 +10,7 @@ export default function PastChartersView() {
     const fetchPast = async () => {
       try {
         const data = await api.getPastCharters();
-        const localExec = localStorage.getItem('fv_executed_charters');
+        const localExec = localStorage.getItem('varuna_executed_charters');
         if (localExec) {
           const parsed = JSON.parse(localExec);
           setPastCharters([...parsed, ...data]);
