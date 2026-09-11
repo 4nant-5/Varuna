@@ -10,7 +10,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import json
 import os
-
+import yfinance as yf
 # ─── PORT & ROUTE DEFINITIONS ─────────────────────────────────────────
 
 LOADING_PORTS = {
@@ -94,89 +94,27 @@ ROUTE_DISTANCES = {
 }
 
 
-def _generate_bdi_series(n_days: int, start_date: datetime) -> np.ndarray:
-    """Generate realistic Baltic Dry Index time series."""
-    t = np.arange(n_days)
-    
-    # Long-term trend (slight upward)
-    trend = 1200 + 0.15 * t
-    
-    # Seasonal cycle (peaks in Q4, troughs in Q1-Q2)
-    seasonal = 350 * np.sin(2 * np.pi * (t - 60) / 365)
-    
-    # Medium-term cycles (shipping super-cycles ~2-3 years)
-    medium_cycle = 200 * np.sin(2 * np.pi * t / 800)
-    
-    # Random walk (market volatility)
-    rng = np.random.RandomState(42)
-    noise = np.cumsum(rng.normal(0, 8, n_days))
-    noise = noise - np.linspace(noise[0], noise[-1], n_days)  # detrend noise
-    
-    # Spike events (supply shocks, demand surges)
-    spikes = np.zeros(n_days)
-    spike_indices = rng.choice(n_days, size=8, replace=False)
-    for idx in spike_indices:
-        spike_magnitude = rng.uniform(200, 600) * rng.choice([-1, 1])
-        spike_decay = np.exp(-np.arange(min(90, n_days - idx)) / 30)
-        spikes[idx:idx + len(spike_decay)] += spike_magnitude * spike_decay
-    
-    bdi = trend + seasonal + medium_cycle + noise + spikes
-    bdi = np.clip(bdi, 400, 4500)  # Realistic BDI range
-    return bdi
+def _fetch_yfinance_data(start_date: datetime, n_days: int) -> pd.DataFrame:
+    """Fetch historical data from yfinance for market indicators."""
+    end_date = start_date + timedelta(days=n_days)
+    tickers = ['BDRY', 'CL=F', 'HRC=F', 'MTF=F', 'TIO=F']
+    print(f"Fetching live yfinance data from {start_date.date()} to {end_date.date()}...")
+    try:
+        data = yf.download(tickers, start=start_date.strftime('%Y-%m-%d'), end=(end_date + timedelta(days=10)).strftime('%Y-%m-%d'), progress=False)
+        close_data = data['Close'].ffill().bfill()
+        
+        # Create full daily index
+        full_index = pd.date_range(start=start_date, periods=n_days, freq='D')
+        
+        # Reindex
+        close_data.index = pd.to_datetime(close_data.index).tz_localize(None)
+        close_data = close_data.reindex(full_index, method='ffill').bfill()
+        
+        return close_data
+    except Exception as e:
+        print(f"Error fetching yfinance data: {e}")
+        raise
 
-
-def _generate_bunker_prices(n_days: int) -> np.ndarray:
-    """Generate realistic VLSFO bunker price series ($/MT)."""
-    t = np.arange(n_days)
-    rng = np.random.RandomState(123)
-    
-    base = 550 + 0.05 * t
-    seasonal = 40 * np.sin(2 * np.pi * t / 365)
-    oil_correlation = 80 * np.sin(2 * np.pi * t / 500)
-    noise = np.cumsum(rng.normal(0, 3, n_days))
-    noise = noise - np.linspace(noise[0], noise[-1], n_days)
-    
-    bunker = base + seasonal + oil_correlation + noise
-    bunker = np.clip(bunker, 350, 950)
-    return bunker
-
-
-def _generate_commodity_prices(n_days: int) -> dict:
-    """Generate realistic commodity price series."""
-    rng = np.random.RandomState(456)
-    t = np.arange(n_days)
-    
-    prices = {}
-    
-    # Iron Ore 62% Fe ($/MT)
-    iron_base = 105 + 0.01 * t
-    iron_seasonal = 12 * np.sin(2 * np.pi * (t - 30) / 365)
-    iron_noise = np.cumsum(rng.normal(0, 1.2, n_days))
-    iron_noise -= np.linspace(iron_noise[0], iron_noise[-1], n_days)
-    prices["iron_ore_62fe"] = np.clip(iron_base + iron_seasonal + iron_noise, 70, 180)
-    
-    # Coking Coal ($/MT)
-    coking_base = 210 + 0.03 * t
-    coking_seasonal = 25 * np.sin(2 * np.pi * (t - 45) / 365)
-    coking_noise = np.cumsum(rng.normal(0, 2.5, n_days))
-    coking_noise -= np.linspace(coking_noise[0], coking_noise[-1], n_days)
-    prices["coking_coal"] = np.clip(coking_base + coking_seasonal + coking_noise, 120, 400)
-    
-    # Thermal Coal ($/MT)
-    thermal_base = 85 + 0.02 * t
-    thermal_seasonal = 15 * np.sin(2 * np.pi * (t + 20) / 365)
-    thermal_noise = np.cumsum(rng.normal(0, 1.0, n_days))
-    thermal_noise -= np.linspace(thermal_noise[0], thermal_noise[-1], n_days)
-    prices["thermal_coal"] = np.clip(thermal_base + thermal_seasonal + thermal_noise, 50, 200)
-    
-    # Steel HRC ($/MT)
-    steel_base = 550 + 0.08 * t
-    steel_seasonal = 40 * np.sin(2 * np.pi * (t - 90) / 365)
-    steel_noise = np.cumsum(rng.normal(0, 4, n_days))
-    steel_noise -= np.linspace(steel_noise[0], steel_noise[-1], n_days)
-    prices["steel_hrc"] = np.clip(steel_base + steel_seasonal + steel_noise, 350, 900)
-    
-    return prices
 
 
 def _generate_freight_rates(n_days: int, bdi: np.ndarray, bunker: np.ndarray) -> dict:
@@ -223,10 +161,20 @@ def generate_training_data(n_days: int = 1095, start_date: str = "2023-06-01") -
     start = datetime.strptime(start_date, "%Y-%m-%d")
     dates = [start + timedelta(days=i) for i in range(n_days)]
     
-    # Generate market indicators
-    bdi = _generate_bdi_series(n_days, start)
-    bunker = _generate_bunker_prices(n_days)
-    commodity_prices = _generate_commodity_prices(n_days)
+    # Fetch live market indicators
+    yf_data = _fetch_yfinance_data(start, n_days)
+    
+    # Scale ETF/Futures back to realistic absolute market levels used by the formulas
+    bdi = yf_data['BDRY'].values * 300 
+    bunker = yf_data['CL=F'].values * 7.5
+    
+    commodity_prices = {
+        "iron_ore_62fe": yf_data['TIO=F'].values,
+        "coking_coal": yf_data['MTF=F'].values * 1.5,
+        "thermal_coal": yf_data['MTF=F'].values,
+        "steel_hrc": yf_data['HRC=F'].values,
+    }
+    
     freight_rates = _generate_freight_rates(n_days, bdi, bunker)
     port_congestion = _generate_port_congestion(n_days)
     
@@ -323,23 +271,72 @@ def generate_training_data(n_days: int = 1095, start_date: str = "2023-06-01") -
     return df
 
 
+# ─── REAL-WORLD VESSEL REGISTRY ────────────────────────────────────────
+# Sourced from public investor fleet disclosures of Star Bulk Carriers
+# (starbulk.com) and Pacific Basin Shipping (pacificbasin.com).
+
+REAL_VESSEL_REGISTRY = {
+    "Capesize": [
+        {"name": "Leviathan", "dwt": 182511, "built_year": 2014, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9662706", "beam_m": 45.0, "max_draft_m": 18.2},
+        {"name": "Peloreus", "dwt": 182496, "built_year": 2014, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9662718", "beam_m": 45.0, "max_draft_m": 18.2},
+        {"name": "Star Claudine", "dwt": 181258, "built_year": 2016, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9725579", "beam_m": 45.0, "max_draft_m": 18.2},
+        {"name": "Star Ophelia", "dwt": 180716, "built_year": 2015, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9706578", "beam_m": 45.0, "max_draft_m": 18.2},
+        {"name": "Star Martha", "dwt": 180274, "built_year": 2013, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9638837", "beam_m": 45.0, "max_draft_m": 18.2},
+        {"name": "Star Pauline", "dwt": 180274, "built_year": 2013, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9638849", "beam_m": 45.0, "max_draft_m": 18.2},
+        {"name": "Pantagruel", "dwt": 180181, "built_year": 2012, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9594430", "beam_m": 45.0, "max_draft_m": 18.2},
+        {"name": "Star Lyra", "dwt": 179147, "built_year": 2011, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9552559", "beam_m": 45.0, "max_draft_m": 18.1},
+        {"name": "Star Bueno", "dwt": 178978, "built_year": 2010, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9525621", "beam_m": 45.0, "max_draft_m": 18.1},
+        {"name": "Star Marilena", "dwt": 178978, "built_year": 2010, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9525633", "beam_m": 45.0, "max_draft_m": 18.1},
+        {"name": "Big Fish", "dwt": 177662, "built_year": 2009, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9486694", "beam_m": 45.0, "max_draft_m": 18.1},
+        {"name": "Kymopolia", "dwt": 176990, "built_year": 2006, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9359094", "beam_m": 45.0, "max_draft_m": 18.0},
+    ],
+    "Panamax": [
+        {"name": "Star Triumph", "dwt": 82068, "built_year": 2005, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9298081", "beam_m": 32.3, "max_draft_m": 14.5},
+        {"name": "Star Scarlett", "dwt": 81711, "built_year": 2010, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9518718", "beam_m": 32.3, "max_draft_m": 14.4},
+        {"name": "Star Audrey", "dwt": 81297, "built_year": 2012, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9594428", "beam_m": 32.3, "max_draft_m": 14.4},
+        {"name": "Star Marianne", "dwt": 80552, "built_year": 2011, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9543674", "beam_m": 32.3, "max_draft_m": 14.4},
+        {"name": "Star Janni", "dwt": 80448, "built_year": 2012, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9605411", "beam_m": 32.3, "max_draft_m": 14.4},
+        {"name": "Star Angie", "dwt": 79471, "built_year": 2007, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9399307", "beam_m": 32.3, "max_draft_m": 14.3},
+        {"name": "Star Kamilla", "dwt": 78928, "built_year": 2008, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9441946", "beam_m": 32.3, "max_draft_m": 14.3},
+        {"name": "Star Jennifer", "dwt": 77312, "built_year": 2004, "operator": "Star Bulk", "flag": "Greece", "imo": "9260942", "beam_m": 32.3, "max_draft_m": 14.2},
+    ],
+    "Supramax": [
+        {"name": "Goodwyn Island", "dwt": 63907, "built_year": 2018, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9820601", "beam_m": 32.0, "max_draft_m": 13.2},
+        {"name": "Pearl Island", "dwt": 63878, "built_year": 2018, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9820613", "beam_m": 32.0, "max_draft_m": 13.2},
+        {"name": "Turtle Island", "dwt": 63562, "built_year": 2018, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9820625", "beam_m": 32.0, "max_draft_m": 13.2},
+        {"name": "Chatham Island", "dwt": 61671, "built_year": 2012, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9617505", "beam_m": 32.0, "max_draft_m": 13.0},
+        {"name": "Nootka Island", "dwt": 61593, "built_year": 2015, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9719289", "beam_m": 32.0, "max_draft_m": 13.0},
+        {"name": "Nightingale Island", "dwt": 61587, "built_year": 2015, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9719291", "beam_m": 32.0, "max_draft_m": 13.0},
+        {"name": "Star Eleonora", "dwt": 61426, "built_year": 2014, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9681672", "beam_m": 32.0, "max_draft_m": 13.0},
+        {"name": "Star Gwyneth", "dwt": 61209, "built_year": 2015, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9706580", "beam_m": 32.0, "max_draft_m": 13.0},
+        {"name": "Star Georgia", "dwt": 60916, "built_year": 2014, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9681684", "beam_m": 32.0, "max_draft_m": 12.9},
+        {"name": "Star Vega", "dwt": 58790, "built_year": 2007, "operator": "Star Bulk", "flag": "Marshall Islands", "imo": "9399319", "beam_m": 32.0, "max_draft_m": 12.8},
+    ],
+    "Handysize": [
+        {"name": "Sandy Bay", "dwt": 40020, "built_year": 2020, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9872319", "beam_m": 28.0, "max_draft_m": 11.2},
+        {"name": "Stanley Bay", "dwt": 40020, "built_year": 2020, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9872321", "beam_m": 28.0, "max_draft_m": 11.2},
+        {"name": "Gullholmen Island", "dwt": 38309, "built_year": 2011, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9569832", "beam_m": 28.0, "max_draft_m": 10.8},
+        {"name": "Neptune Island", "dwt": 38191, "built_year": 2012, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9608617", "beam_m": 28.0, "max_draft_m": 10.8},
+        {"name": "Ipswich Bay", "dwt": 38190, "built_year": 2014, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9675201", "beam_m": 28.0, "max_draft_m": 10.8},
+        {"name": "Iona Island", "dwt": 38180, "built_year": 2013, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9645906", "beam_m": 28.0, "max_draft_m": 10.8},
+        {"name": "Irvine Bay", "dwt": 37920, "built_year": 2014, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9675213", "beam_m": 28.0, "max_draft_m": 10.7},
+        {"name": "Port Pirie", "dwt": 37918, "built_year": 2016, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9731045", "beam_m": 28.0, "max_draft_m": 10.7},
+        {"name": "Iwagi Island", "dwt": 37657, "built_year": 2019, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9856431", "beam_m": 28.0, "max_draft_m": 10.7},
+        {"name": "Jamaica Bay", "dwt": 37633, "built_year": 2013, "operator": "Pacific Basin", "flag": "Hong Kong", "imo": "9645918", "beam_m": 28.0, "max_draft_m": 10.7},
+    ],
+}
+
+
 def generate_vessel_pool(n_vessels: int = 30) -> list:
-    """Generate a pool of available vessels with current positions."""
+    """Generate a pool of available vessels from real-world fleet registries.
+    
+    Ships are sourced from public investor fleet disclosures of
+    Star Bulk Carriers and Pacific Basin Shipping.
+    Position and availability are simulated.
+    """
     rng = np.random.RandomState(555)
     
-    vessel_names_prefix = ["MV ", "MT ", "MV ", ""]
-    vessel_names = [
-        "Ocean Glory", "Pacific Trader", "Steel Phoenix", "Iron Monarch",
-        "Cape Fortune", "Eastern Star", "Global Voyager", "Sea Champion",
-        "Bulk Pioneer", "Trade Wind", "Cargo Eagle", "Deep Horizon",
-        "Orient Express", "Bay Thunder", "Wave Runner", "Port Royal",
-        "Storm Rider", "Golden Anchor", "Blue Sapphire", "Terra Nova",
-        "Arctic Explorer", "Coal Titan", "Iron Duke", "Silver Stream",
-        "Emerald Bay", "Neptune's Pride", "Red Phoenix", "Dawn Breaker",
-        "Coral Spirit", "Thunder Bay"
-    ]
-    
-    # Current positions (latitude, longitude)
+    # Current positions (latitude, longitude) — simulated
     position_regions = [
         {"name": "Indian Ocean", "lat_range": (-10, 15), "lon_range": (60, 90)},
         {"name": "Southeast Asia", "lat_range": (-5, 10), "lon_range": (100, 120)},
@@ -349,40 +346,54 @@ def generate_vessel_pool(n_vessels: int = 30) -> list:
         {"name": "East China Sea", "lat_range": (25, 35), "lon_range": (120, 135)},
     ]
     
+    # Build a flat list of all real vessels tagged with their class
+    all_real_vessels = []
+    for vessel_class, ships in REAL_VESSEL_REGISTRY.items():
+        for ship in ships:
+            all_real_vessels.append({**ship, "vessel_class": vessel_class})
+    
+    # Sample n_vessels from the registry (with replacement if needed)
+    n_available = len(all_real_vessels)
+    if n_vessels <= n_available:
+        selected = list(rng.choice(all_real_vessels, size=n_vessels, replace=False))
+    else:
+        selected = list(rng.choice(all_real_vessels, size=n_vessels, replace=True))
+    
     vessels = []
-    for i in range(n_vessels):
-        vessel_class = rng.choice(list(VESSEL_CLASSES.keys()), p=[0.15, 0.30, 0.35, 0.20])
+    for i, ship in enumerate(selected):
+        vessel_class = ship["vessel_class"]
         v_info = VESSEL_CLASSES[vessel_class]
-        
-        dwt = rng.randint(v_info["dwt_min"], v_info["dwt_max"])
-        age = rng.randint(1, 25)
+        age = 2026 - ship["built_year"]
         
         region = rng.choice(position_regions)
         lat = rng.uniform(*region["lat_range"])
         lon = rng.uniform(*region["lon_range"])
         
-        # Availability
-        days_until_free = rng.choice([0, 0, 0, 1, 2, 3, 5, 7, 10, 14], p=[0.25, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05])
+        days_until_free = rng.choice(
+            [0, 0, 0, 1, 2, 3, 5, 7, 10, 14],
+            p=[0.25, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05],
+        )
         
         consumption = v_info["consumption_mt_day"] * (1 + age * 0.01 + rng.normal(0, 0.03))
         
         vessel = {
             "id": f"V{i+1:03d}",
-            "name": f"{rng.choice(vessel_names_prefix)}{vessel_names[i]}",
+            "name": ship["name"],
+            "operator": ship["operator"],
             "vessel_class": vessel_class,
-            "dwt": dwt,
+            "dwt": ship["dwt"],
             "age_years": age,
-            "speed_knots": v_info["speed_knots"] - age * 0.05 + rng.normal(0, 0.2),
+            "speed_knots": round(v_info["speed_knots"] - age * 0.05 + rng.normal(0, 0.2), 1),
             "consumption_laden_mt_day": round(consumption, 1),
             "consumption_ballast_mt_day": round(consumption * 0.85, 1),
             "daily_opex": v_info["daily_opex"] + age * 50,
             "current_position": {"lat": round(lat, 2), "lon": round(lon, 2), "region": region["name"]},
             "days_until_available": days_until_free,
-            "flag": rng.choice(["Panama", "Liberia", "Marshall Islands", "Hong Kong", "Singapore", "Greece"]),
-            "built_year": 2026 - age,
-            "beam_m": v_info["beam"] + rng.uniform(-0.5, 0.5),
-            "max_draft_m": round(rng.uniform(12, 18) if vessel_class != "Capesize" else rng.uniform(17, 21), 1),
-            "imo_number": f"{rng.randint(9000000, 9999999)}",
+            "flag": ship["flag"],
+            "built_year": ship["built_year"],
+            "beam_m": ship["beam_m"],
+            "max_draft_m": ship["max_draft_m"],
+            "imo_number": ship["imo"],
             "hire_rate_per_day": round(v_info["daily_opex"] * rng.uniform(1.4, 2.2)),
             "eu_ets_compliant": bool(rng.choice([True, False], p=[0.7, 0.3])),
         }

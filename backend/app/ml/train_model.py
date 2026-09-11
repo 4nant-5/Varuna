@@ -34,8 +34,8 @@ def main():
     print(f"Routes: {df['loading_port'].nunique()} loading ports → {df['discharge_port'].nunique()} discharge ports")
     print(f"Date range: {df['date'].min()} to {df['date'].max()}")
     
-    model = FreightForecastModel()
-    metrics = model.train(df)
+    model = FreightForecastModel()  # use_ensemble=True, tunes with Optuna by default
+    metrics = model.train(df)  # default: 60 trials, 5-fold TimeSeriesSplit, CQR intervals, SHAP
     
     print("\n" + "=" * 60)
     print("TRAINING RESULTS")
@@ -46,6 +46,14 @@ def main():
     print(f"\nTop Features:")
     for feat, imp in list(metrics['feature_importance'].items())[:5]:
         print(f"  {feat}: {imp:.4f}")
+    print(f"\nTuned hyperparameters ({metrics['n_trials']} Optuna trials):")
+    for k, v in metrics['best_params'].items():
+        print(f"  {k}: {v}")
+    if metrics['ensemble_used']:
+        w = metrics['ensemble_weights']
+        print(f"\nEnsemble blend: XGBoost {w['xgb']:.0%} / LightGBM {w['lgb']:.0%} (weighted by inverse CV error)")
+    print(f"\nPrediction interval: {metrics['quantile_method']}, "
+          f"{metrics['quantile_calibration_coverage_pct']:.1f}% empirical coverage on held-out calibration data")
     
     # Step 3: Save model
     model.save(model_path)

@@ -336,8 +336,8 @@ export default function ResultsPanel({ result, onSaveCharter, onSavePast }) {
 
                 {/* Vessel Title & Gear Info */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '17px', fontWeight: 800, color: '#fff' }}>
-                    {v.vesselClass}
+                  <span style={{ fontSize: '17px', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {v.name}
                   </span>
                   <span style={{ fontSize: '11px', color: 'var(--accent-primary)', fontWeight: 600 }}>
                     {v.dwt?.toLocaleString()} DWT
@@ -345,7 +345,7 @@ export default function ResultsPanel({ result, onSaveCharter, onSavePast }) {
                 </div>
 
                 <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {v.cranes || (v.vesselClass === 'Capesize' || v.vesselClass === 'Panamax' ? 'Gearless Bulk Carrier' : 'Geared (4x30T Cranes + Grabs)')}
+                  <strong style={{ color: 'var(--text-secondary)' }}>{v.vesselClass}</strong> • {v.cranes || (v.vesselClass === 'Capesize' || v.vesselClass === 'Panamax' ? 'Gearless Bulk Carrier' : 'Geared (4x30T Cranes + Grabs)')}
                 </div>
 
                 {/* Metrics 2x3 Grid */}

@@ -9,6 +9,7 @@ import {
   HelpCircle,
   FileText,
   Sliders,
+  Map as MapIcon,
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }) {
@@ -40,6 +41,14 @@ export default function Sidebar({ activeTab, setActiveTab }) {
         >
           <Compass className="sidebar-icon" size={18} />
           <span>Craft Procurement</span>
+        </button>
+
+        <button
+          className={`sidebar-item ${activeTab === 'route-map' ? 'active' : ''}`}
+          onClick={() => setActiveTab('route-map')}
+        >
+          <MapIcon className="sidebar-icon" size={18} />
+          <span>Route Optimizer</span>
         </button>
 
         <button

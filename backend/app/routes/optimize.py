@@ -4,6 +4,7 @@ vessel options with ship images, and full port dispatcher info.
 """
 
 from fastapi import APIRouter, HTTPException, Request
+from ..ml.route_model import route_optimizer
 from pydantic import BaseModel
 from typing import Optional, Any, Dict, List
 import os
@@ -343,12 +344,21 @@ def _build_unified_optimization(payload: dict) -> dict:
         },
     ]
 
+    # Load real vessel pool to display actual ship names
+    try:
+        import os, json, random
+        pool_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "vessel_pool.json")
+        with open(pool_path, "r") as f:
+            vpool = json.load(f)
+    except Exception:
+        vpool = []
+
     # Vessel options with images & specs
-    classes_to_show = ["Capesize", "Panamax", "Supramax", "Handymax"]
+    classes_to_show = ["Capesize", "Panamax", "Supramax", "Handysize"]
     vessel_options = []
     for vc in classes_to_show:
-        v_asset = VESSEL_ASSETS[vc]
-        is_rec = (vc == rec_vessel_class)
+        v_asset = VESSEL_ASSETS.get(vc, VESSEL_ASSETS.get("Handymax"))
+        is_rec = (vc == rec_vessel_class or (vc == "Handysize" and rec_vessel_class == "Handymax"))
         rate_mod = 0.88 if vc == "Capesize" else 1.0 if vc == "Panamax" else 1.14 if vc == "Supramax" else 1.32
         v_rate = round(base_rate * rate_mod, 2)
         v_tot = round(v_rate * quantity_mt)
@@ -361,11 +371,27 @@ def _build_unified_optimization(payload: dict) -> dict:
             v_consumption = v_consumption * 0.72
         v_co2 = round((v_sea_days * v_consumption + 4 * 3.5) * 3.114)
         
+        # Pick a real ship from our pool
+        matching = [s for s in vpool if s.get("vessel_class") == vc]
+        if matching:
+            real_ship = random.choice(matching)
+            s_name = real_ship["name"]
+            s_imo = str(real_ship.get("imo_number", "9999999"))
+            s_flag = f"{real_ship.get('flag', 'Unknown')}"
+            s_dwt = real_ship.get("dwt", v_asset["dwt"])
+            s_built = real_ship.get("built_year", 2015)
+        else:
+            s_name = f"MV {vc.upper()} VOYAGER"
+            s_imo = str(9840000 + hash(vc) % 90000)
+            s_flag = "Singapore (SG)" if is_rec else "Marshall Islands (MH)"
+            s_dwt = v_asset["dwt"]
+            s_built = 2021
+        
         vessel_options.append({
             "vesselClass": vc,
-            "name": f"MV {vc.upper()} VOYAGER",
+            "name": s_name,
             "image": v_asset["image"],
-            "dwt": v_asset["dwt"],
+            "dwt": s_dwt,
             "speedKnots": v_asset["speed"],
             "maxDraftM": v_asset["draft"],
             "beamM": v_asset["beam"],
@@ -378,9 +404,9 @@ def _build_unified_optimization(payload: dict) -> dict:
             "co2EmissionsTons": v_co2,
             "recommended": is_rec,
             "draftCompliant": True,
-            "imoNumber": str(9840000 + hash(vc) % 90000),
-            "flag": "Singapore (SG)" if is_rec else "Marshall Islands (MH)",
-            "builtYear": 2021,
+            "imoNumber": s_imo,
+            "flag": s_flag,
+            "builtYear": s_built,
             "classificationSociety": "DNV / Indian Register of Shipping (IRS)",
             "description": v_asset["description"],
         })
@@ -471,6 +497,20 @@ async def optimize_charter(payload: Dict[str, Any]):
     """Alias for charter optimization."""
     try:
         return _build_unified_optimization(payload)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/route")
+async def optimize_route(payload: Dict[str, Any]):
+    """Calculate optimal maritime route using ML engine."""
+    try:
+        origin = payload.get("origin", "Port Hedland, Australia")
+        destination = payload.get("destination", "Paradip, India")
+        vessel_speed = payload.get("vessel_speed", 13.5)
+        
+        result = route_optimizer.predict_route(origin, destination, vessel_speed)
+        return {"status": "success", "data": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

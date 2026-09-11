@@ -141,6 +141,25 @@ export const api = {
     return generateMockOptimization(charterInput);
   },
 
+  async optimizeRoute(origin, destination, vesselSpeed = 13.5) {
+    try {
+      const res = await fetch(`${API_BASE}/optimize/route`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ origin, destination, vessel_speed: vesselSpeed }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.status === 'success') {
+          return data.data;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return null;
+  },
+
   // ─── Saved Charters ─────────────────────────────────────────
   async getSavedCharters() {
     try {

@@ -8,6 +8,7 @@ import ResultsPanel from '../components/dashboard/ResultsPanel';
 import SavedChartersView from '../components/dashboard/SavedChartersView';
 import PastChartersView from '../components/dashboard/PastChartersView';
 import AnalyticsView from '../components/dashboard/AnalyticsView';
+import RouteOptimizationView from '../components/dashboard/RouteOptimizationView';
 import { api } from '../services/api';
 
 export default function Dashboard() {
@@ -127,6 +128,10 @@ export default function Dashboard() {
 
         {activeTab === 'analytics' && (
           <AnalyticsView />
+        )}
+
+        {activeTab === 'route-map' && (
+          <RouteOptimizationView />
         )}
       </main>
 
